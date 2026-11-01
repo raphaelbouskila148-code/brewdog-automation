@@ -12,7 +12,7 @@ class BasePage:
         self.status_code = 0
 
     __SEARCH_BOX = "input[name='q']:visible >> nth=0"
-    __ROBOT_CHECK = "iframe[src*='challenges.cloudflare.com'], body:has-text('needs to be verified')"
+    __SITE_BLOCK = "iframe[src*='challenges.cloudflare.com'], body:has-text('needs to be verified'), body:has-text('check your connection')"
     __AGE_CONFIRM_BTN = "uwp-age-gate button:has-text('Confirm')"
 
     @property
@@ -94,25 +94,25 @@ class BasePage:
         try:
             self.page.locator(locator).wait_for(timeout=15000)
         except Exception:
-            self.skip_if_robot_check()
+            self.skip_if_site_blocks_us()
             raise
 
     def add_log(self, name, text):
         allure.attach(str(text), name=name, attachment_type=allure.attachment_type.TEXT)
         show_note(self.page, name + ": " + str(text))
 
-    @allure.step("Check if the site is showing its robot check")
-    def is_robot_check_shown(self):
-        if self.page.locator(self.__ROBOT_CHECK).count() == 0:
+    @allure.step("Check if the site is blocking this visit")
+    def is_site_blocking_us(self):
+        if self.page.locator(self.__SITE_BLOCK).count() == 0:
             return False
-        show_note(self.page, "The site is showing a robot check. Waiting 10 seconds...", 10)
+        show_note(self.page, "The site may be blocking this visit. Waiting 10 seconds...", 10)
         self.page.wait_for_timeout(10000)
-        return self.page.locator(self.__ROBOT_CHECK).count() > 0
+        return self.page.locator(self.__SITE_BLOCK).count() > 0
 
-    def skip_if_robot_check(self):
-        if self.is_robot_check_shown():
-            self.add_log("Robot check", "The site asked to verify the visitor is human, so this test was skipped")
-            pytest.skip("The site's robot check is blocking automated visits from this computer")
+    def skip_if_site_blocks_us(self):
+        if self.is_site_blocking_us():
+            self.add_log("Blocked by the site", "The site asked to verify the visitor is human, or refused the request, so this test was skipped")
+            pytest.skip("The site is blocking automated visits from this computer")
 
     @allure.step("Go to {path}")
     def open_without_age_check(self, path):
@@ -120,7 +120,7 @@ class BasePage:
         response = self.page.goto(BASE_URL + path)
         self.status_code = response.status
         self.add_log("Opened page", BASE_URL + path + " (status code " + str(response.status) + ")")
-        self.skip_if_robot_check()
+        self.skip_if_site_blocks_us()
 
     def open(self, path):
         self.open_without_age_check(path)
