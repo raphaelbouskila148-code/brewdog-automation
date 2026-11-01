@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# PyCharm
+.idea/
+
+# Test output (generated on every run)
+reports/
+test-results/
+allure-results/
+allure-report/
+.pytest_cache/

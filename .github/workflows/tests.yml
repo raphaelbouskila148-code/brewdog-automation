@@ -1,0 +1,104 @@
+# CI pipeline: GitHub runs the whole test suite automatically.
+#
+# When it runs:
+#   - every push to main and every pull request
+#   - every Monday morning (catches changes BrewDog makes to their site)
+#   - manually, from the Actions tab ("Run workflow")
+#
+# What it does:
+#   1. runs all tests in Chromium, Firefox and WebKit (Safari's engine) in parallel
+#   2. saves the HTML report, Allure results and failure screenshots/videos per browser
+#   3. builds the Allure report from the Chromium run and publishes it on GitHub Pages
+
+name: BrewDog Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false # if one browser fails, still finish the others
+      matrix:
+        browser: [chromium, firefox, webkit]
+
+    steps:
+      - name: Get the code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Install ${{ matrix.browser }} browser
+        run: python -m playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Run tests
+        # -o addopts="" turns off --headed and --slowmo from pytest.ini (GitHub has no screen)
+        run: pytest -o addopts="" --browser ${{ matrix.browser }} --alluredir=allure-results --html=reports/report.html --self-contained-html --screenshot only-on-failure --video retain-on-failure --tracing retain-on-failure
+
+      - name: Save test results
+        if: always() # save results even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.browser }}
+          path: |
+            reports/
+            allure-results/
+            test-results/
+          retention-days: 14
+
+  publish-report:
+    name: Publish Allure report to GitHub Pages
+    needs: test
+    if: always() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - name: Download Chromium results
+        uses: actions/download-artifact@v4
+        with:
+          name: results-chromium
+          path: results
+
+      - name: Set up Java (needed by Allure)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Build Allure report
+        run: |
+          npm install -g allure-commandline
+          allure generate results/allure-results -o site --clean
+
+      - name: Prepare report for Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

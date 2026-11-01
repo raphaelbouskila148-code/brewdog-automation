@@ -1,0 +1,7 @@
+{
+"categories": [["T113", "beer"], ["T115", "ipas"], ["T116", "lagers"], ["T201", "variety-packs"], ["T114", "non-alcoholics"], ["T118", "merch"]],
+"footer_links": [["T315", "Shipping & Returns", "shipping-returns"], ["T319", "FAQs & Contact Us", "contact-us"], ["T323", "Terms & Conditions", "terms-and-conditions"], ["T324", "Privacy Policy", "privacy-policy"]],
+"invalid_emails": [["T304-3", "plainaddress"], ["T304-4", "user@"], ["T304-5", "user@@example.com"]],
+"countries": [["T329-2", "DE", "de.brewdog.com"], ["T329-3", "GB", "brewdog.com"]],
+"cities": [["T128", "Denver"], ["T126", "Las Vegas"]]
+}
