@@ -91,7 +91,11 @@ class BasePage:
     def wait_for(self, locator):
         if not self.page.locator(locator).is_visible():
             show_note(self.page, "Waiting up to 15 seconds for the element to appear...", 15)
-        self.page.locator(locator).wait_for(timeout=15000)
+        try:
+            self.page.locator(locator).wait_for(timeout=15000)
+        except Exception:
+            self.skip_if_robot_check()
+            raise
 
     def add_log(self, name, text):
         allure.attach(str(text), name=name, attachment_type=allure.attachment_type.TEXT)
