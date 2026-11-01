@@ -1,4 +1,5 @@
 import allure
+import pytest
 from playwright.sync_api import Page
 from pages.screen_marks import highlight, show_note, ORANGE, BLUE, GREEN
 
@@ -11,6 +12,7 @@ class BasePage:
         self.status_code = 0
 
     __SEARCH_BOX = "input[name='q']:visible >> nth=0"
+    __ROBOT_CHECK = "text=Verify you are human"
     __AGE_CONFIRM_BTN = "uwp-age-gate button:has-text('Confirm')"
 
     @property
@@ -95,12 +97,26 @@ class BasePage:
         allure.attach(str(text), name=name, attachment_type=allure.attachment_type.TEXT)
         show_note(self.page, name + ": " + str(text))
 
+    @allure.step("Check if the site is showing its robot check")
+    def is_robot_check_shown(self):
+        if not self.page.locator(self.__ROBOT_CHECK).is_visible():
+            return False
+        show_note(self.page, "The site is showing a robot check. Waiting 5 seconds...", 5)
+        self.page.wait_for_timeout(5000)
+        return self.page.locator(self.__ROBOT_CHECK).is_visible()
+
+    def skip_if_robot_check(self):
+        if self.is_robot_check_shown():
+            self.add_log("Robot check", "The site asked to verify the visitor is human, so this test was skipped")
+            pytest.skip("The site's robot check is blocking automated visits from this computer")
+
     @allure.step("Go to {path}")
     def open_without_age_check(self, path):
         show_note(self.page, "Opening " + BASE_URL + path + " ...", 8)
         response = self.page.goto(BASE_URL + path)
         self.status_code = response.status
         self.add_log("Opened page", BASE_URL + path + " (status code " + str(response.status) + ")")
+        self.skip_if_robot_check()
 
     def open(self, path):
         self.open_without_age_check(path)
