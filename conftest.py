@@ -1,7 +1,7 @@
 import os
 import platform
 import pytest
-from pages.base_page import BASE_URL
+from pages.brewdog_page import BASE_URL
 from pages.collection_page import CollectionPage
 from pages.home_page import HomePage
 from pages.product_page import ProductPage

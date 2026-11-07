@@ -1,10 +1,10 @@
 import allure
 from playwright.sync_api import Page
-from pages.base_page import BasePage
+from pages.brewdog_page import BrewDogPage
 from pages.screen_marks import show_note
 
 
-class ProductPage(BasePage):
+class ProductPage(BrewDogPage):
     def __init__(self, page: Page):
         super().__init__(page)
 
